@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Wiziwig
+Type=Application
+Comment=A html rich text editor
+Exec=wiziwig %F
+MimeType=text/html;
+Icon=io.github.fastrizwaan.wiziwig
+StartupNotify=true
+Categories=Office
+Keywords=richtext;word;html;wysiwyg
