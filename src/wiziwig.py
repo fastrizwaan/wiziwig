@@ -116,38 +116,38 @@ class EditorWindow(Adw.ApplicationWindow):
         toolbar_view.add_top_bar(header)
 
         # Toolbar groups
-        file_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        file_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         file_group.add_css_class("toolbar-group")
 
-        edit_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        edit_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         edit_group.add_css_class("toolbar-group")
 
-        view_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        view_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         view_group.add_css_class("toolbar-group")
 
-        text_style_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        text_style_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         text_style_group.add_css_class("toolbar-group")
 
-        text_format_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        text_format_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         text_format_group.add_css_class("toolbar-group")
 
-        list_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        list_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         list_group.add_css_class("toolbar-group")
 
-        align_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        align_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         align_group.add_css_class("toolbar-group")
 
-        color_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        color_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         color_group.add_css_class("toolbar-group")
 
         # Higher-level toolbar groups
-        file_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        file_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         file_toolbar_group.add_css_class("toolbar-group-container")
         file_toolbar_group.append(file_group)
         file_toolbar_group.append(edit_group)
         file_toolbar_group.append(view_group)
 
-        formatting_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        formatting_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         formatting_toolbar_group.add_css_class("toolbar-group-container")
         formatting_toolbar_group.append(text_style_group)
         formatting_toolbar_group.append(text_format_group)
