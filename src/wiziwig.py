@@ -24,19 +24,22 @@ class EditorWindow(Adw.ApplicationWindow):
         self.set_default_size(1000, 700)
         self.add_css_styles()
 
+        # CSS Provider
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_data(b"""
+            .toolbar-container {
+                padding: 6px;
+                background-color: rgba(127, 127, 127, 0.05);
+            }
             .flat {
-                background: none; /* No background for buttons, toggle buttons, etc. */
+                background: none;
             }
             .flat:hover {
-                background: rgba(127, 127, 127, 0.25); /* Hover effect for buttons, etc. */
+                background: rgba(127, 127, 127, 0.25);
             }
             .flat:checked {
-                        background: rgba(127, 127, 127, 0.25);
-                    }
-            
-            /* Target color button specifically */
+                background: rgba(127, 127, 127, 0.25);
+            }
             colorbutton.flat, 
             colorbutton.flat button {
                 background: none;
@@ -45,8 +48,6 @@ class EditorWindow(Adw.ApplicationWindow):
             colorbutton.flat button:hover {
                 background: rgba(127, 127, 127, 0.25);
             }
-            
-            /* Target dropdown widgets and their child buttons */
             dropdown.flat,
             dropdown.flat button {
                 background: none;
@@ -55,22 +56,29 @@ class EditorWindow(Adw.ApplicationWindow):
             dropdown.flat:hover {
                 background: rgba(127, 127, 127, 0.25);
             }
-            
-            /* Ensure flat-header takes precedence */
-            .flat-header,
-            dropdown.flat:active {
-                background: none;
+            .flat-header {
+                background: rgba(127, 127, 127, 0.05);
                 border: none;
                 box-shadow: none;
             }
-            
             .button-box button {
                 min-width: 80px;
                 min-height: 36px;
             }
-            
             .highlighted {
                 background-color: rgba(127, 127, 127, 0.15);
+            }
+            .toolbar-container {
+                padding: 6px;
+            }
+            .toolbar-group {
+                margin: 0 6px;
+            }
+            .toolbar-separator {
+                min-height: 16px;
+                min-width: 1px;
+                background-color: alpha(currentColor, 0.15);
+                margin: 0 6px;
             }
         """)
 
@@ -93,49 +101,118 @@ class EditorWindow(Adw.ApplicationWindow):
 </head>
 <body><p><br></p></body>
 </html>"""
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_content(box)
+
+        # Main layout
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(main_box)
+
+        toolbar_view = Adw.ToolbarView()
+        main_box.append(toolbar_view)
+
+        # Header bar
         header = Adw.HeaderBar()
-        header.add_css_class("flat-header")  # Changed from "flat" to "flat-header"
-        box.append(header)
+        header.add_css_class("flat-header")
+        header.set_centering_policy(Adw.CenteringPolicy.STRICT)
+        toolbar_view.add_top_bar(header)
 
-        # Toolbar1: File & edit actions with 10px start/end margin
-        toolbar1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3, 
-                          margin_top=1, margin_bottom=1, margin_start=10, margin_end=10)
-        box.append(toolbar1)
+        # Toolbar groups
+        file_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        file_group.add_css_class("toolbar-group")
 
-        # Toolbar2: Formatting & styling with 10px start/end margin
-        toolbar2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3, 
-                          margin_top=1, margin_bottom=1, margin_start=10, margin_end=10)
-        toolbar2.set_halign(Gtk.Align.START)
-        box.append(toolbar2)
+        edit_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        edit_group.add_css_class("toolbar-group")
 
+        view_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        view_group.add_css_class("toolbar-group")
+
+        text_style_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        text_style_group.add_css_class("toolbar-group")
+
+        text_format_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        text_format_group.add_css_class("toolbar-group")
+
+        list_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        list_group.add_css_class("toolbar-group")
+
+        align_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        align_group.add_css_class("toolbar-group")
+
+        color_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        color_group.add_css_class("toolbar-group")
+
+        # Higher-level toolbar groups
+        file_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        file_toolbar_group.add_css_class("toolbar-group-container")
+        file_toolbar_group.append(file_group)
+        file_toolbar_group.append(edit_group)
+        file_toolbar_group.append(view_group)
+
+        formatting_toolbar_group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        formatting_toolbar_group.add_css_class("toolbar-group-container")
+        formatting_toolbar_group.append(text_style_group)
+        formatting_toolbar_group.append(text_format_group)
+        formatting_toolbar_group.append(list_group)
+        formatting_toolbar_group.append(align_group)
+        formatting_toolbar_group.append(color_group)
+
+        # FlowBox for toolbars
+        toolbars_flowbox = Gtk.FlowBox()
+        toolbars_flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        toolbars_flowbox.set_max_children_per_line(100)  # Large number to allow wrapping
+        toolbars_flowbox.add_css_class("toolbar-container")
+
+        # Add higher-level groups to FlowBox
+        toolbars_flowbox.insert(file_toolbar_group, -1)
+        toolbars_flowbox.insert(formatting_toolbar_group, -1)
+
+        # Content area
         scroll = Gtk.ScrolledWindow(vexpand=True)
-        box.append(scroll)
         self.webview = WebKit.WebView(editable=True)
         self.webview.connect('load-changed', self.on_webview_load)
         scroll.set_child(self.webview)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        content_box.append(toolbars_flowbox)
+        content_box.append(scroll)
+        toolbar_view.set_content(content_box)
+
         self.webview.load_html(self.initial_html, "file:///")
 
-        # --- Toolbar1 Buttons (Colorful Icons) ---
-        for (icon, handler) in [
+        # Populate file group
+        for icon, handler in [
             ("document-new", self.on_new_clicked),
             ("document-open", self.on_open_clicked),
             ("document-save", self.on_save_clicked),
             ("document-save-as", self.on_save_as_clicked),
             ("document-print", self.on_print_clicked),
+        ]:
+            btn = Gtk.Button(icon_name=icon)
+            btn.add_css_class("flat")
+            btn.connect("clicked", handler)
+            file_group.append(btn)
+
+        # Populate edit group
+        for icon, handler in [
             ("edit-cut", self.on_cut_clicked),
             ("edit-copy", self.on_copy_clicked),
             ("edit-paste", self.on_paste_clicked),
             ("edit-undo", self.on_undo_clicked),
             ("edit-redo", self.on_redo_clicked),
+        ]:
+            btn = Gtk.Button(icon_name=icon)
+            btn.add_css_class("flat")
+            btn.connect("clicked", handler)
+            edit_group.append(btn)
+
+        # Populate view group
+        for icon, handler in [
             ("edit-find", self.on_find_clicked),
             ("edit-find-replace", self.on_replace_clicked)
         ]:
             btn = Gtk.Button(icon_name=icon)
             btn.add_css_class("flat")
             btn.connect("clicked", handler)
-            toolbar1.append(btn)
+            view_group.append(btn)
 
         zoom_store = Gtk.StringList()
         for level in ["10%", "25%", "50%", "75%", "100%", "150%", "200%", "400%", "1000%"]:
@@ -144,23 +221,21 @@ class EditorWindow(Adw.ApplicationWindow):
         zoom_dropdown.set_selected(4)
         zoom_dropdown.connect("notify::selected", self.on_zoom_changed)
         zoom_dropdown.add_css_class("flat")
-        toolbar1.append(zoom_dropdown)
+        view_group.append(zoom_dropdown)
 
-        # Dark mode button in toolbar1 (Colorful Icons)
-        self.dark_mode_btn = Gtk.ToggleButton()
-        self.dark_mode_btn.set_icon_name("display-brightness")
+        self.dark_mode_btn = Gtk.ToggleButton(icon_name="display-brightness")
         self.dark_mode_btn.connect("toggled", self.on_dark_mode_toggled)
         self.dark_mode_btn.add_css_class("flat")
-        toolbar1.append(self.dark_mode_btn)
+        view_group.append(self.dark_mode_btn)
 
-        # --- Toolbar2 Buttons (Colorful Icons) ---
+        # Populate text style group
         heading_store = Gtk.StringList()
         for h in ["Normal", "H1", "H2", "H3", "H4", "H5", "H6"]:
             heading_store.append(h)
         heading_dropdown = Gtk.DropDown(model=heading_store)
         heading_dropdown.connect("notify::selected", self.on_heading_changed)
         heading_dropdown.add_css_class("flat")
-        toolbar2.append(heading_dropdown)
+        text_style_group.append(heading_dropdown)
 
         font_map = PangoCairo.FontMap.get_default()
         families = font_map.list_families()
@@ -169,11 +244,11 @@ class EditorWindow(Adw.ApplicationWindow):
         for name in font_names:
             font_store.append(name)
         self.font_dropdown = Gtk.DropDown(model=font_store)
-        self.font_dropdown.connect("notify::selected", self.on_font_family_changed)
         default_index = font_names.index("Sans") if "Sans" in font_names else 0
         self.font_dropdown.set_selected(default_index)
+        self.font_dropdown.connect("notify::selected", self.on_font_family_changed)
         self.font_dropdown.add_css_class("flat")
-        toolbar2.append(self.font_dropdown)
+        text_style_group.append(self.font_dropdown)
 
         size_store = Gtk.StringList()
         for size in ["8", "10", "11", "12", "14", "16", "18", "24", "36", "48"]:
@@ -182,78 +257,72 @@ class EditorWindow(Adw.ApplicationWindow):
         self.size_dropdown.set_selected(2)
         self.size_dropdown.connect("notify::selected", self.on_font_size_changed)
         self.size_dropdown.add_css_class("flat")
-        toolbar2.append(self.size_dropdown)
+        text_style_group.append(self.size_dropdown)
 
-        # Toggle Buttons for formatting
+        # Populate text format group
         self.bold_btn = Gtk.ToggleButton(icon_name="format-text-bold")
         self.bold_btn.add_css_class("flat")
         self.bold_btn.connect("toggled", self.on_bold_toggled)
-        toolbar2.append(self.bold_btn)
+        text_format_group.append(self.bold_btn)
 
         self.italic_btn = Gtk.ToggleButton(icon_name="format-text-italic")
         self.italic_btn.add_css_class("flat")
         self.italic_btn.connect("toggled", self.on_italic_toggled)
-        toolbar2.append(self.italic_btn)
+        text_format_group.append(self.italic_btn)
 
         self.underline_btn = Gtk.ToggleButton(icon_name="format-text-underline")
         self.underline_btn.add_css_class("flat")
         self.underline_btn.connect("toggled", self.on_underline_toggled)
-        toolbar2.append(self.underline_btn)
+        text_format_group.append(self.underline_btn)
 
         self.strikethrough_btn = Gtk.ToggleButton(icon_name="format-text-strikethrough")
         self.strikethrough_btn.add_css_class("flat")
         self.strikethrough_btn.connect("toggled", self.on_strikethrough_toggled)
-        toolbar2.append(self.strikethrough_btn)
+        text_format_group.append(self.strikethrough_btn)
 
-        # Justification Dropdown
-        align_store = Gtk.StringList()
-        align_options = [
-            ("Left", "format-justify-left", self.on_align_left),
-            ("Center", "format-justify-center", self.on_align_center),
-            ("Right", "format-justify-right", self.on_align_right),
-            ("Justify", "format-justify-fill", self.on_align_justify)
+        # Populate align group
+        align_buttons = [
+            ("format-justify-left", self.on_align_left),
+            ("format-justify-center", self.on_align_center),
+            ("format-justify-right", self.on_align_right),
+            ("format-justify-fill", self.on_align_justify)
         ]
-        for label, _, _ in align_options:
-            align_store.append(label)
-        self.align_dropdown = Gtk.DropDown(model=align_store)
-        self.align_dropdown.set_selected(0)
-        self.align_dropdown.connect("notify::selected", self.on_align_changed)
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self.setup_align_dropdown_item)
-        factory.connect("bind", self.bind_align_dropdown_item, align_options)
-        self.align_dropdown.set_factory(factory)
-        self.align_dropdown.add_css_class("flat")
-        toolbar2.append(self.align_dropdown)
+        for icon, handler in align_buttons:
+            btn = Gtk.Button(icon_name=icon)
+            btn.add_css_class("flat")
+            btn.connect("clicked", handler)
+            align_group.append(btn)
 
-        # Toggle Buttons for lists with mutual exclusivity
+        # Populate list group
         self.bullet_btn = Gtk.ToggleButton(icon_name="view-list-bullet")
         self.bullet_btn.connect("toggled", self.on_bullet_list_toggled)
         self.bullet_btn.add_css_class("flat")
-        toolbar2.append(self.bullet_btn)
+        list_group.append(self.bullet_btn)
 
         self.number_btn = Gtk.ToggleButton(icon_name="view-list-ordered")
         self.number_btn.connect("toggled", self.on_number_list_toggled)
         self.number_btn.add_css_class("flat")
-        toolbar2.append(self.number_btn)
+        list_group.append(self.number_btn)
 
-        for (icon, handler) in [
+        for icon, handler in [
             ("format-indent-more", self.on_indent_more),
             ("format-indent-less", self.on_indent_less)
         ]:
             btn = Gtk.Button(icon_name=icon)
             btn.connect("clicked", handler)
             btn.add_css_class("flat")
-            toolbar2.append(btn)
+            list_group.append(btn)
 
+        # Populate color group
         text_color_btn = Gtk.ColorButton()
         text_color_btn.connect("color-set", self.on_text_color_set)
         text_color_btn.add_css_class("flat")
-        toolbar2.append(text_color_btn)
+        color_group.append(text_color_btn)
 
         bg_color_btn = Gtk.ColorButton()
         bg_color_btn.connect("color-set", self.on_bg_color_set)
         bg_color_btn.add_css_class("flat")
-        toolbar2.append(bg_color_btn)
+        color_group.append(bg_color_btn)
 
     def setup_align_dropdown_item(self, factory, list_item):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -413,8 +482,6 @@ class EditorWindow(Adw.ApplicationWindow):
                     script = f"""
                         (function() {{
                             console.log('Find script running with term: ' + {json.dumps(search_term)});
-                            
-                            // Clear previous highlights
                             const highlights = document.querySelectorAll('span.wiziwig-highlight');
                             highlights.forEach(span => {{
                                 const parent = span.parentNode;
@@ -424,8 +491,6 @@ class EditorWindow(Adw.ApplicationWindow):
                                 parent.removeChild(span);
                                 parent.normalize();
                             }});
-                            
-                            // Collect all text nodes first
                             const walker = document.createTreeWalker(
                                 document.body,
                                 NodeFilter.SHOW_TEXT,
@@ -437,55 +502,40 @@ class EditorWindow(Adw.ApplicationWindow):
                                     : NodeFilter.FILTER_REJECT 
                                 }}
                             );
-                            
                             const textNodes = [];
                             let node;
                             while ((node = walker.nextNode())) {{
                                 textNodes.push(node);
                             }}
-                            
-                            // Process each text node
                             const regex = new RegExp({json.dumps(search_term)}, 'gi');
                             textNodes.forEach(node => {{
                                 const text = node.nodeValue;
                                 const matches = [...text.matchAll(regex)];
                                 if (matches.length === 0) return;
-                                
                                 const fragment = document.createDocumentFragment();
                                 let lastIndex = 0;
-                                
                                 matches.forEach(match => {{
                                     const start = match.index;
                                     const matchText = match[0];
-                                    
-                                    // Add text before the match
                                     if (start > lastIndex) {{
                                         fragment.appendChild(document.createTextNode(
                                             text.slice(lastIndex, start)
                                         ));
                                     }}
-                                    
-                                    // Add highlighted span
                                     const span = document.createElement('span');
                                     span.className = 'wiziwig-highlight';
                                     span.style.backgroundColor = 'yellow';
                                     span.textContent = matchText;
                                     fragment.appendChild(span);
-                                    
                                     lastIndex = start + matchText.length;
                                 }});
-                                
-                                // Add remaining text
                                 if (lastIndex < text.length) {{
                                     fragment.appendChild(document.createTextNode(
                                         text.slice(lastIndex)
                                     ));
                                 }}
-                                
-                                // Replace the original node
                                 node.parentNode.replaceChild(fragment, node);
                             }});
-                            
                             console.log('Find script completed');
                         }})();
                     """
@@ -563,21 +613,21 @@ class EditorWindow(Adw.ApplicationWindow):
     def on_bullet_list_toggled(self, btn):
         if btn.get_active():
             if self.number_btn.get_active():
-                self.exec_js("document.execCommand('insertOrderedList')")  # Remove numbered list
+                self.exec_js("document.execCommand('insertOrderedList')")
                 self.number_btn.set_active(False)
-            self.exec_js("document.execCommand('insertUnorderedList')")  # Apply bullet list
+            self.exec_js("document.execCommand('insertUnorderedList')")
         else:
-            self.exec_js("document.execCommand('insertUnorderedList')")  # Remove bullet list
+            self.exec_js("document.execCommand('insertUnorderedList')")
         self.webview.grab_focus()
 
     def on_number_list_toggled(self, btn):
         if btn.get_active():
             if self.bullet_btn.get_active():
-                self.exec_js("document.execCommand('insertUnorderedList')")  # Remove bullet list
+                self.exec_js("document.execCommand('insertUnorderedList')")
                 self.bullet_btn.set_active(False)
-            self.exec_js("document.execCommand('insertOrderedList')")  # Apply numbered list
+            self.exec_js("document.execCommand('insertOrderedList')")
         else:
-            self.exec_js("document.execCommand('insertOrderedList')")  # Remove numbered list
+            self.exec_js("document.execCommand('insertOrderedList')")
         self.webview.grab_focus()
 
     def on_heading_changed(self, dropdown, *args):
