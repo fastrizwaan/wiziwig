@@ -22,8 +22,8 @@ class EditorWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title("Wiziwig")
         self.set_default_size(1000, 700)
-        #self.add_css_styles()
-        # Replace your current css_provider.load_from_data() with this updated CSS
+        self.add_css_styles()
+
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_data(b"""
             .flat {
@@ -393,52 +393,128 @@ class EditorWindow(Adw.ApplicationWindow):
     def on_undo_clicked(self, btn): self.exec_js("document.execCommand('undo')")
     def on_redo_clicked(self, btn): self.exec_js("document.execCommand('redo')")
     def on_find_clicked(self, btn):
-        window = Gtk.Dialog(title="Find", transient_for=self, modal=True)
-        content_area = window.get_content_area()
-        content_area.set_margin_top(10)
-        content_area.set_margin_bottom(10)
-        content_area.set_margin_start(10)
-        content_area.set_margin_end(10)
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content_area.append(content)
-        entry = Gtk.Entry(placeholder_text="Enter search term")
-        content.append(entry)
-        window.add_button("Cancel", Gtk.ResponseType.CANCEL)
-        find_btn = window.add_button("Find", Gtk.ResponseType.OK)
-        find_btn.get_style_context().add_class("suggested-action")
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Find",
+            body="Enter search term",
+            close_response="cancel",
+            modal=True
+        )
+        entry = Gtk.Entry()
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("find", "Find")
+        dialog.set_response_appearance("find", Adw.ResponseAppearance.SUGGESTED)
+        
         def on_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == "find":
                 search_term = entry.get_text()
                 if search_term:
                     script = f"""
                         (function() {{
-                            let search = {json.dumps(search_term)};
-                            let regex = new RegExp(search, 'gi');
-                            document.body.innerHTML = document.body.innerHTML.replace(regex, match => `<span style="background-color: yellow;">${{match}}</span>`);
+                            console.log('Find script running with term: ' + {json.dumps(search_term)});
+                            
+                            // Clear previous highlights
+                            const highlights = document.querySelectorAll('span.wiziwig-highlight');
+                            highlights.forEach(span => {{
+                                const parent = span.parentNode;
+                                while (span.firstChild) {{
+                                    parent.insertBefore(span.firstChild, span);
+                                }}
+                                parent.removeChild(span);
+                                parent.normalize();
+                            }});
+                            
+                            // Collect all text nodes first
+                            const walker = document.createTreeWalker(
+                                document.body,
+                                NodeFilter.SHOW_TEXT,
+                                {{ acceptNode: node => 
+                                    (node.parentNode.tagName !== 'SCRIPT' && 
+                                     node.parentNode.tagName !== 'STYLE' && 
+                                     node.nodeValue.trim()) 
+                                    ? NodeFilter.FILTER_ACCEPT 
+                                    : NodeFilter.FILTER_REJECT 
+                                }}
+                            );
+                            
+                            const textNodes = [];
+                            let node;
+                            while ((node = walker.nextNode())) {{
+                                textNodes.push(node);
+                            }}
+                            
+                            // Process each text node
+                            const regex = new RegExp({json.dumps(search_term)}, 'gi');
+                            textNodes.forEach(node => {{
+                                const text = node.nodeValue;
+                                const matches = [...text.matchAll(regex)];
+                                if (matches.length === 0) return;
+                                
+                                const fragment = document.createDocumentFragment();
+                                let lastIndex = 0;
+                                
+                                matches.forEach(match => {{
+                                    const start = match.index;
+                                    const matchText = match[0];
+                                    
+                                    // Add text before the match
+                                    if (start > lastIndex) {{
+                                        fragment.appendChild(document.createTextNode(
+                                            text.slice(lastIndex, start)
+                                        ));
+                                    }}
+                                    
+                                    // Add highlighted span
+                                    const span = document.createElement('span');
+                                    span.className = 'wiziwig-highlight';
+                                    span.style.backgroundColor = 'yellow';
+                                    span.textContent = matchText;
+                                    fragment.appendChild(span);
+                                    
+                                    lastIndex = start + matchText.length;
+                                }});
+                                
+                                // Add remaining text
+                                if (lastIndex < text.length) {{
+                                    fragment.appendChild(document.createTextNode(
+                                        text.slice(lastIndex)
+                                    ));
+                                }}
+                                
+                                // Replace the original node
+                                node.parentNode.replaceChild(fragment, node);
+                            }});
+                            
+                            console.log('Find script completed');
                         }})();
                     """
+                    print(f"Executing find script for term: '{search_term}'")
                     self.exec_js(script)
             dialog.destroy()
-        window.connect("response", on_response)
-        window.present()
+        
+        dialog.connect("response", on_response)
+        dialog.present()
     def on_replace_clicked(self, btn):
-        window = Gtk.Dialog(title="Replace", transient_for=self, modal=True)
-        content_area = window.get_content_area()
-        content_area.set_margin_top(10)
-        content_area.set_margin_bottom(10)
-        content_area.set_margin_start(10)
-        content_area.set_margin_end(10)
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content_area.append(content)
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Replace",
+            body="Enter search and replacement terms",
+            close_response="cancel",
+            modal=True
+        )
         search_entry = Gtk.Entry(placeholder_text="Search term")
         replace_entry = Gtk.Entry(placeholder_text="Replace with")
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.append(search_entry)
         content.append(replace_entry)
-        window.add_button("Cancel", Gtk.ResponseType.CANCEL)
-        replace_btn = window.add_button("Replace All", Gtk.ResponseType.OK)
-        replace_btn.get_style_context().add_class("suggested-action")
+        dialog.set_extra_child(content)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("replace", "Replace All")
+        dialog.set_response_appearance("replace", Adw.ResponseAppearance.SUGGESTED)
+        
         def on_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == "replace":
                 search = search_entry.get_text()
                 replacement = replace_entry.get_text()
                 if search and replacement:
@@ -452,8 +528,9 @@ class EditorWindow(Adw.ApplicationWindow):
                     """
                     self.exec_js(script)
             dialog.destroy()
-        window.connect("response", on_response)
-        window.present()
+        
+        dialog.connect("response", on_response)
+        dialog.present()
     def replace_text(self, search, replacement):
         script = f"""document.body.innerHTML = document.body.innerHTML.split({json.dumps(search)}).join({json.dumps(replacement)});"""
         self.exec_js(script)
