@@ -22,15 +22,55 @@ class EditorWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title("Wiziwig")
         self.set_default_size(1000, 700)
-        self.add_css_styles()
+        #self.add_css_styles()
+        # Replace your current css_provider.load_from_data() with this updated CSS
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_data(b"""
-            .menu-button.flat:hover {
-                background-color: @headerbar_bg_color;
+            .flat {
+                background: none; /* No background for buttons, toggle buttons, etc. */
             }
+            .flat:hover {
+                background: rgba(127, 127, 127, 0.25); /* Hover effect for buttons, etc. */
+            }
+            .flat:checked {
+                        background: rgba(127, 127, 127, 0.25);
+                    }
+            
+            /* Target color button specifically */
+            colorbutton.flat, 
+            colorbutton.flat button {
+                background: none;
+            }
+            colorbutton.flat:hover, 
+            colorbutton.flat button:hover {
+                background: rgba(127, 127, 127, 0.25);
+            }
+            
+            /* Target dropdown widgets and their child buttons */
+            dropdown.flat,
+            dropdown.flat button {
+                background: none;
+                border-radius: 5px;
+            }
+            dropdown.flat:hover {
+                background: rgba(127, 127, 127, 0.25);
+            }
+            
+            /* Ensure flat-header takes precedence */
+            .flat-header,
+            dropdown.flat:active {
+                background: none;
+                border: none;
+                box-shadow: none;
+            }
+            
             .button-box button {
                 min-width: 80px;
                 min-height: 36px;
+            }
+            
+            .highlighted {
+                background-color: rgba(127, 127, 127, 0.15);
             }
         """)
 
@@ -56,16 +96,16 @@ class EditorWindow(Adw.ApplicationWindow):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(box)
         header = Adw.HeaderBar()
-        header.add_css_class("flat")
+        header.add_css_class("flat-header")  # Changed from "flat" to "flat-header"
         box.append(header)
 
         # Toolbar1: File & edit actions with 10px start/end margin
-        toolbar1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5, 
+        toolbar1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3, 
                           margin_top=1, margin_bottom=1, margin_start=10, margin_end=10)
         box.append(toolbar1)
 
         # Toolbar2: Formatting & styling with 10px start/end margin
-        toolbar2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5, 
+        toolbar2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3, 
                           margin_top=1, margin_bottom=1, margin_start=10, margin_end=10)
         toolbar2.set_halign(Gtk.Align.START)
         box.append(toolbar2)
@@ -182,6 +222,7 @@ class EditorWindow(Adw.ApplicationWindow):
         factory.connect("setup", self.setup_align_dropdown_item)
         factory.connect("bind", self.bind_align_dropdown_item, align_options)
         self.align_dropdown.set_factory(factory)
+        self.align_dropdown.add_css_class("flat")
         toolbar2.append(self.align_dropdown)
 
         # Toggle Buttons for lists with mutual exclusivity
@@ -201,6 +242,7 @@ class EditorWindow(Adw.ApplicationWindow):
         ]:
             btn = Gtk.Button(icon_name=icon)
             btn.connect("clicked", handler)
+            btn.add_css_class("flat")
             toolbar2.append(btn)
 
         text_color_btn = Gtk.ColorButton()
