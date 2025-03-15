@@ -154,13 +154,14 @@ class EditorWindow(Adw.ApplicationWindow):
         
         # Dark Mode Toggle Button with Icon
         self.dark_mode_btn = Gtk.ToggleButton()
-        self.dark_mode_btn.set_icon_name("night-light-symbolic")
+        self.dark_mode_btn.set_icon_name("display-brightness-symbolic")  # sun icon for light mode
         self.dark_mode_btn.connect("toggled", self.on_dark_mode_toggled)
         toolbar2.append(self.dark_mode_btn)
         
     def on_dark_mode_toggled(self, btn):
         if btn.get_active():
-            # Enable dark mode by injecting styles
+            # Dark mode is on: show moon icon (weather-clear-night-symbolic)
+            btn.set_icon_name("weather-clear-night-symbolic")
             script = """
                 (function() {
                     let styleId = 'dynamic-theme-style';
@@ -181,7 +182,8 @@ class EditorWindow(Adw.ApplicationWindow):
                 })();
             """
         else:
-            # Disable dark mode by removing the styles
+            # Dark mode is off: show sun icon (display-brightness-symbolic)
+            btn.set_icon_name("display-brightness-symbolic")
             script = """
                 (function() {
                     let styleId = 'dynamic-theme-style';
