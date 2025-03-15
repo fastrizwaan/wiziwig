@@ -151,7 +151,47 @@ class EditorWindow(Adw.ApplicationWindow):
         bg_color_btn.set_title("Background Color")
         bg_color_btn.connect("color-set", self.on_bg_color_set)
         toolbar2.append(bg_color_btn)
-
+        
+        # Dark Mode Toggle Button with Icon
+        self.dark_mode_btn = Gtk.ToggleButton()
+        self.dark_mode_btn.set_icon_name("night-light-symbolic")
+        self.dark_mode_btn.connect("toggled", self.on_dark_mode_toggled)
+        toolbar2.append(self.dark_mode_btn)
+        
+    def on_dark_mode_toggled(self, btn):
+        if btn.get_active():
+            # Enable dark mode by injecting styles
+            script = """
+                (function() {
+                    let styleId = 'dynamic-theme-style';
+                    let existingStyle = document.getElementById(styleId);
+                    if (!existingStyle) {
+                        let style = document.createElement('style');
+                        style.id = styleId;
+                        style.textContent = `
+                            @media (prefers-color-scheme: dark) { 
+                                body { background-color: #242424 !important; color: #e0e0e0 !important; } 
+                            }
+                            @media (prefers-color-scheme: light) { 
+                                body { background-color: #ffffff !important; color: #000000 !important; } 
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                })();
+            """
+        else:
+            # Disable dark mode by removing the styles
+            script = """
+                (function() {
+                    let styleId = 'dynamic-theme-style';
+                    let existingStyle = document.getElementById(styleId);
+                    if (existingStyle) {
+                        existingStyle.remove();
+                    }
+                })();
+            """
+        self.exec_js(script)
     def on_webview_load(self, webview, load_event):
         if load_event == WebKit.LoadEvent.FINISHED:
             script = """
