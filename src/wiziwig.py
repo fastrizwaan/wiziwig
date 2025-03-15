@@ -194,6 +194,7 @@ class EditorWindow(Adw.ApplicationWindow):
         self.exec_js(script)
     def on_webview_load(self, webview, load_event):
         if load_event == WebKit.LoadEvent.FINISHED:
+            # Set cursor to the start of the first <p> element
             script = """
                 let p = document.querySelector('p');
                 if (p) {
@@ -207,6 +208,29 @@ class EditorWindow(Adw.ApplicationWindow):
             """
             self.webview.evaluate_javascript(script, -1, None, None, None, None, None)
             GLib.idle_add(self.webview.grab_focus)
+
+            # Apply dark mode styles if the toggle is active
+            if self.dark_mode_btn.get_active():
+                dark_mode_script = """
+                    (function() {
+                        let styleId = 'dynamic-theme-style';
+                        let existingStyle = document.getElementById(styleId);
+                        if (!existingStyle) {
+                            let style = document.createElement('style');
+                            style.id = styleId;
+                            style.textContent = `
+                                @media (prefers-color-scheme: dark) { 
+                                    body { background-color: #242424 !important; color: #e0e0e0 !important; } 
+                                }
+                                @media (prefers-color-scheme: light) { 
+                                    body { background-color: #ffffff !important; color: #000000 !important; } 
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                    })();
+                """
+                self.exec_js(dark_mode_script)
 
     def exec_js(self, script):
         self.webview.evaluate_javascript(script, -1, None, None, None, None, None)
